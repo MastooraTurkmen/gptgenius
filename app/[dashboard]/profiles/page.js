@@ -1,6 +1,8 @@
+import { UserProfile } from "@clerk/clerk-react"
+
 const ProfilePage = () => {
     return (
-        <div>ProfilePage</div>
+        <UserProfile />
     )
 }
 
