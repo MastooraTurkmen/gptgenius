@@ -1,5 +1,6 @@
 'use server'
 import OpenAI from "openai";
+import prisma from "./db";
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
@@ -26,7 +27,59 @@ export const generateChatResponse = async (chatMessage) => {
 }
 
 export const getExistingTour = async ({ city, country }) => {
-    return null
+    return prisma.tour.findUnique({
+        where: {
+            city_country: {
+                city,
+                country
+            }
+        }
+    })
+}
+
+export const createNewTour = async (tour) => {
+    return prisma.tour.create({
+        data: tour,
+    })
+}
+
+export const getAllTours = async (searchTerm) => {
+    if (!searchTerm) {
+        const tours = await prisma.tour.findMany({
+            orderBy: {
+                city: 'asc'
+            }
+        })
+        return tours;
+    }
+
+    const tours = await prisma.tour.findMany({
+        where: {
+            OR: [
+                {
+                    city: {
+                        contains: searchTerm
+                    },
+                    country: {
+                        contains: searchTerm
+                    },
+                }
+            ]
+        },
+        orderBy: {
+            city: 'asc'
+        }
+    })
+    return tours
+}
+
+
+export const getSingleTour = async (id) => {
+    return prisma.tour.findUnique({
+        where: {
+            id,
+        }
+    })
 }
 
 export const generateTourResponse = async ({ city, country }) => {
@@ -63,6 +116,17 @@ If you can't find info on exact ${city}, or ${city} does not exist, or it's popu
         return null
     }
 }
-export const createNewTour = async (tour) => {
-    return null
-}
+
+
+export const generateTourImage = async ({ city, country }) => {
+    try {
+        const tourImage = await openai.images.generate({
+            prompt: `a panoramic view of the ${city} ${country}`,
+            n: 1,
+            size: '512x512',
+        });
+        return tourImage?.data[0]?.url;
+    } catch (error) {
+        return null;
+    }
+};
